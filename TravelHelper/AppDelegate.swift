@@ -7,6 +7,7 @@
 
 import UIKit
 import CoreData
+import AMapFoundationKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +16,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // 初始化高德地图SDK
+        AMapServices.shared().apiKey = "fe318d0463aac4edaa94170b858dd6a0"
+        AMapServices.shared().enableHTTPS = true
+        
         return true
     }
 

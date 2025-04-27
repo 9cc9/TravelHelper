@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>需要获取您的位置信息以提供导航服务</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>需要获取您的位置信息以提供导航服务</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -20,6 +29,11 @@
 				</dict>
 			</array>
 		</dict>
+	</dict>
+	<key>AMapServices</key>
+	<dict>
+		<key>APIKey</key>
+		<string>fe318d0463aac4edaa94170b858dd6a0</string>
 	</dict>
 </dict>
 </plist>

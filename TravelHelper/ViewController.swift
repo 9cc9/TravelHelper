@@ -6,6 +6,9 @@
 //
 
 import UIKit
+import AMapFoundationKit
+import AMapLocationKit
+import AMapSearchKit
 
 class ViewController: UIViewController {
     
@@ -13,7 +16,22 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupAMap()
         setupUI()
+    }
+    
+    private func setupAMap() {
+        // 配置高德地图
+        AMapServices.shared().enableHTTPS = true
+        AMapServices.shared().apiKey = "fe318d0463aac4edaa94170b858dd6a0"
+        
+        // 设置隐私政策
+        AMapLocationManager.updatePrivacyShow(.didShow, privacyInfo: .didContain)
+        AMapLocationManager.updatePrivacyAgree(.didAgree)
+        
+        // 设置搜索SDK的隐私政策
+        AMapSearchAPI.updatePrivacyShow(.didShow, privacyInfo: .didContain)
+        AMapSearchAPI.updatePrivacyAgree(.didAgree)
     }
     
     private func setupUI() {
