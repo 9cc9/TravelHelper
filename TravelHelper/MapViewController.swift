@@ -5,16 +5,26 @@ import AMapLocationKit
 import MAMapKit
 
 class MapViewController: UIViewController {
-    private var mapView: MAMapView!
-    private var route: AMapRoute?
-    private var startPoint: CLLocationCoordinate2D?
-    private var endPoint: CLLocationCoordinate2D?
+    private let mapView: MAMapView
+    private let route: AMapRoute
+    private let startPoint: CLLocationCoordinate2D
+    private let endPoint: CLLocationCoordinate2D
     
     init(route: AMapRoute, startPoint: CLLocationCoordinate2D, endPoint: CLLocationCoordinate2D) {
+        // 初始化地图视图
+        let mapView = MAMapView(frame: .zero)
+        mapView.showsUserLocation = true
+        mapView.userTrackingMode = .follow
+        
+        self.mapView = mapView
         self.route = route
         self.startPoint = startPoint
         self.endPoint = endPoint
+        
         super.init(nibName: nil, bundle: nil)
+        
+        // 设置代理
+        mapView.delegate = self
     }
     
     required init?(coder: NSCoder) {
@@ -23,28 +33,31 @@ class MapViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupMapView()
-        showRoute()
+        setupUI()
+        setupMap()
     }
     
-    private func setupMapView() {
-        mapView = MAMapView(frame: view.bounds)
-        mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        mapView.delegate = self
+    private func setupUI() {
         view.addSubview(mapView)
-        
-        // 设置地图样式
-        mapView.showsUserLocation = true
-        mapView.userTrackingMode = .follow
-        mapView.zoomLevel = 15
+        mapView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            mapView.topAnchor.constraint(equalTo: view.topAnchor),
+            mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
     }
     
-    private func showRoute() {
-        guard let route = route,
-              let startPoint = startPoint,
-              let endPoint = endPoint else { return }
+    private func setupMap() {
+        // 设置地图中心点和缩放级别
+        let center = CLLocationCoordinate2D(
+            latitude: (startPoint.latitude + endPoint.latitude) / 2,
+            longitude: (startPoint.longitude + endPoint.longitude) / 2
+        )
+        mapView.setCenter(center, animated: true)
+        mapView.setZoomLevel(15, animated: true)
         
-        // 添加起点和终点标注
+        // 添加起点和终点标记
         let startAnnotation = MAPointAnnotation()
         startAnnotation.coordinate = startPoint
         startAnnotation.title = "起点"
@@ -55,35 +68,50 @@ class MapViewController: UIViewController {
         endAnnotation.title = "终点"
         mapView.addAnnotation(endAnnotation)
         
-        // 显示路线
+        // 绘制步行路线
         if let path = route.paths.first {
-            // 解析路线坐标字符串
-            var coordinates = parsePolylineString(path.polyline)
+            print("开始绘制路线，路径数量：\(route.paths.count)")
+            print("路径总距离：\(path.distance)米")
+            
+            var coordinates: [CLLocationCoordinate2D] = []
+            
+            // 使用步骤的坐标点
+            if let steps = path.steps {
+                print("步骤数量：\(steps.count)")
+                for (index, step) in steps.enumerated() {
+                    print("步骤\(index + 1): \(step.instruction ?? "")")
+                    
+                    // 解析步骤的折线
+                    if let polyline = step.polyline {
+                        let points = polyline.components(separatedBy: ";")
+                        for point in points {
+                            let coordinate = point.components(separatedBy: ",")
+                            if coordinate.count == 2,
+                               let longitude = Double(coordinate[0]),
+                               let latitude = Double(coordinate[1]) {
+                                coordinates.append(CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+                            }
+                        }
+                    }
+                }
+            }
+            
+            print("总坐标点数量：\(coordinates.count)")
             
             // 创建折线
-            let polyline = MAPolyline(coordinates: &coordinates, count: UInt(coordinates.count))
-            mapView.add(polyline)
-            
-            // 调整地图视野以显示整条路线
-            mapView.showAnnotations([startAnnotation, endAnnotation], animated: true)
-        }
-    }
-    
-    // 解析高德地图的路线坐标字符串
-    private func parsePolylineString(_ polylineString: String) -> [CLLocationCoordinate2D] {
-        var coordinates: [CLLocationCoordinate2D] = []
-        let points = polylineString.components(separatedBy: ";")
-        
-        for point in points {
-            let components = point.components(separatedBy: ",")
-            if components.count == 2,
-               let longitude = Double(components[0]),
-               let latitude = Double(components[1]) {
-                coordinates.append(CLLocationCoordinate2D(latitude: latitude, longitude: longitude))
+            if !coordinates.isEmpty {
+                let polyline = MAPolyline(coordinates: &coordinates, count: UInt(coordinates.count))
+                mapView.add(polyline)
+                print("折线已添加到地图")
+            } else {
+                print("没有有效的坐标点")
             }
+            
+            // 调整地图视野以显示完整路线
+            mapView.showAnnotations([startAnnotation, endAnnotation], animated: true)
+        } else {
+            print("没有找到路径")
         }
-        
-        return coordinates
     }
 }
 
@@ -98,17 +126,17 @@ extension MapViewController: MAMapViewDelegate {
                 annotationView = MAPinAnnotationView(annotation: annotation, reuseIdentifier: pointReuseIndetifier)
             }
             
-            annotationView!.canShowCallout = true
-            annotationView!.animatesDrop = true
-            annotationView!.isDraggable = false
+            annotationView?.canShowCallout = true
+            annotationView?.animatesDrop = true
+            annotationView?.isDraggable = false
             
             if annotation.title == "起点" {
-                annotationView!.pinColor = .green
+                annotationView?.pinColor = MAPinAnnotationColor.green
             } else if annotation.title == "终点" {
-                annotationView!.pinColor = .red
+                annotationView?.pinColor = MAPinAnnotationColor.red
             }
             
-            return annotationView!
+            return annotationView
         }
         return nil
     }
@@ -117,7 +145,7 @@ extension MapViewController: MAMapViewDelegate {
         if overlay.isKind(of: MAPolyline.self) {
             let renderer = MAPolylineRenderer(overlay: overlay)
             renderer?.lineWidth = 8.0
-            renderer?.strokeColor = UIColor.blue
+            renderer?.strokeColor = UIColor(red: 0.0, green: 0.5, blue: 1.0, alpha: 0.8)
             return renderer
         }
         return nil

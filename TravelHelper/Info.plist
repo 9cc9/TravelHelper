@@ -35,5 +35,9 @@
 		<key>APIKey</key>
 		<string>fe318d0463aac4edaa94170b858dd6a0</string>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 </dict>
 </plist>

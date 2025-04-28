@@ -42,6 +42,8 @@ class AMapService: NSObject {
         locationManager?.desiredAccuracy = kCLLocationAccuracyHundredMeters
         locationManager?.locationTimeout = 2
         locationManager?.reGeocodeTimeout = 2
+        locationManager?.allowsBackgroundLocationUpdates = true
+        locationManager?.pausesLocationUpdatesAutomatically = false
         print("定位服务初始化完成")
     }
     
@@ -61,6 +63,13 @@ class AMapService: NSObject {
         print("开始搜索起点坐标...")
         // 先搜索起点坐标
         search?.aMapGeocodeSearch(startGeocodeRequest)
+    }
+}
+
+// MARK: - MAMapViewDelegate
+extension AMapService: MAMapViewDelegate {
+    func mapViewRequireLocationAuth(_ locationManager: CLLocationManager!) {
+        locationManager.requestAlwaysAuthorization()
     }
 }
 
@@ -88,7 +97,7 @@ extension AMapService: AMapSearchDelegate {
             
             // 继续搜索终点坐标
             let endGeocodeRequest = AMapGeocodeSearchRequest()
-            endGeocodeRequest.address = endAddress // 使用正确的终点地址
+            endGeocodeRequest.address = endAddress
             print("开始搜索终点坐标...")
             search?.aMapGeocodeSearch(endGeocodeRequest)
         } else {
@@ -101,9 +110,16 @@ extension AMapService: AMapSearchDelegate {
             walkRouteRequest.origin = AMapGeoPoint.location(withLatitude: CGFloat(startLocation!.latitude), longitude: CGFloat(startLocation!.longitude))
             walkRouteRequest.destination = AMapGeoPoint.location(withLatitude: CGFloat(endLocation!.latitude), longitude: CGFloat(endLocation!.longitude))
             
+            // 设置路线规划策略
+            walkRouteRequest.strategy = 0 // 使用默认策略
+            
             print("开始规划步行路线...")
             print("起点坐标: \(startLocation!)")
             print("终点坐标: \(endLocation!)")
+            print("路线规划请求配置：")
+            print("- 起点：\(walkRouteRequest.origin)")
+            print("- 终点：\(walkRouteRequest.destination)")
+            print("- 策略：\(walkRouteRequest.strategy)")
             
             search?.aMapWalkingRouteSearch(walkRouteRequest)
         }
@@ -112,6 +128,7 @@ extension AMapService: AMapSearchDelegate {
     // 步行路线规划回调
     func onRouteSearchDone(_ request: AMapRouteSearchBaseRequest!, response: AMapRouteSearchResponse!) {
         print("路线规划回调")
+        print("响应状态：\(response.count)")
         
         if response.route == nil {
             print("未找到步行路线")
@@ -121,16 +138,47 @@ extension AMapService: AMapSearchDelegate {
         
         let route = response.route
         var steps: [String] = []
+        var coordinates: [CLLocationCoordinate2D] = []
         
         // 解析步行路线
         if let paths = route?.paths {
             print("找到 \(paths.count) 条路径")
             for path in paths {
+                print("路径距离：\(path.distance)米")
+                print("路径策略：\(path.strategy)")
+                print("路径耗时：\(path.duration)秒")
+                
+                // 获取路径的完整折线
+                if let pathPolyline = path.polyline {
+                    print("路径折线数据：\(pathPolyline)")
+                    let points = pathPolyline.components(separatedBy: ";")
+                    print("折线点数量：\(points.count)")
+                    
+                    for point in points {
+                        let coordinate = point.components(separatedBy: ",")
+                        if coordinate.count == 2 {
+                            if let longitude = Double(coordinate[0]),
+                               let latitude = Double(coordinate[1]),
+                               !longitude.isNaN && !latitude.isNaN {
+                                let coord = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+                                coordinates.append(coord)
+                                print("添加坐标点：\(coord)")
+                            } else {
+                                print("无效的坐标点：\(point)")
+                            }
+                        }
+                    }
+                } else {
+                    print("路径没有折线数据")
+                }
+                
                 if let walkSteps = path.steps {
                     print("路径包含 \(walkSteps.count) 个步骤")
                     for step in walkSteps {
                         if let instruction = step.instruction {
                             steps.append(instruction)
+                            print("步骤：\(instruction)")
+                            print("步骤折线：\(step.polyline ?? "无")")
                         }
                     }
                 }
@@ -140,6 +188,10 @@ extension AMapService: AMapSearchDelegate {
         if let startLocation = startLocation,
            let endLocation = endLocation {
             print("路线规划成功，共 \(steps.count) 个步骤")
+            print("总坐标点数量：\(coordinates.count)")
+            if coordinates.isEmpty {
+                print("警告：没有有效的坐标点")
+            }
             completionHandler?(.success((steps: steps, route: route!, startPoint: startLocation, endPoint: endLocation)))
         } else {
             print("坐标信息不完整")
