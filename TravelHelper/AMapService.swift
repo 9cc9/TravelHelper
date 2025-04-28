@@ -97,7 +97,7 @@ extension AMapService: AMapSearchDelegate {
             
             // 继续搜索终点坐标
             let endGeocodeRequest = AMapGeocodeSearchRequest()
-            endGeocodeRequest.address = endAddress
+            endGeocodeRequest.address = endAddress // 使用正确的终点地址
             print("开始搜索终点坐标...")
             search?.aMapGeocodeSearch(endGeocodeRequest)
         } else {
@@ -109,17 +109,11 @@ extension AMapService: AMapSearchDelegate {
             let walkRouteRequest = AMapWalkingRouteSearchRequest()
             walkRouteRequest.origin = AMapGeoPoint.location(withLatitude: CGFloat(startLocation!.latitude), longitude: CGFloat(startLocation!.longitude))
             walkRouteRequest.destination = AMapGeoPoint.location(withLatitude: CGFloat(endLocation!.latitude), longitude: CGFloat(endLocation!.longitude))
-            
-            // 设置路线规划策略
-            walkRouteRequest.strategy = 0 // 使用默认策略
+            walkRouteRequest.showFieldsType = AMapWalkingRouteShowFieldType.all
             
             print("开始规划步行路线...")
             print("起点坐标: \(startLocation!)")
             print("终点坐标: \(endLocation!)")
-            print("路线规划请求配置：")
-            print("- 起点：\(walkRouteRequest.origin)")
-            print("- 终点：\(walkRouteRequest.destination)")
-            print("- 策略：\(walkRouteRequest.strategy)")
             
             search?.aMapWalkingRouteSearch(walkRouteRequest)
         }
@@ -129,6 +123,9 @@ extension AMapService: AMapSearchDelegate {
     func onRouteSearchDone(_ request: AMapRouteSearchBaseRequest!, response: AMapRouteSearchResponse!) {
         print("路线规划回调")
         print("响应状态：\(response.count)")
+
+        // 打印完整的高德响应
+
         
         if response.route == nil {
             print("未找到步行路线")
@@ -145,15 +142,11 @@ extension AMapService: AMapSearchDelegate {
             print("找到 \(paths.count) 条路径")
             for path in paths {
                 print("路径距离：\(path.distance)米")
-                print("路径策略：\(path.strategy)")
-                print("路径耗时：\(path.duration)秒")
                 
                 // 获取路径的完整折线
                 if let pathPolyline = path.polyline {
                     print("路径折线数据：\(pathPolyline)")
                     let points = pathPolyline.components(separatedBy: ";")
-                    print("折线点数量：\(points.count)")
-                    
                     for point in points {
                         let coordinate = point.components(separatedBy: ",")
                         if coordinate.count == 2 {
@@ -178,7 +171,6 @@ extension AMapService: AMapSearchDelegate {
                         if let instruction = step.instruction {
                             steps.append(instruction)
                             print("步骤：\(instruction)")
-                            print("步骤折线：\(step.polyline ?? "无")")
                         }
                     }
                 }
@@ -205,4 +197,5 @@ extension AMapService: AMapSearchDelegate {
         print("错误详情: \(error)")
         completionHandler?(.failure(error))
     }
-} 
+}
+ 
