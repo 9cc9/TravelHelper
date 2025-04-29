@@ -9,8 +9,10 @@ class MapViewController: UIViewController {
     private let route: AMapRoute
     private let startPoint: CLLocationCoordinate2D
     private let endPoint: CLLocationCoordinate2D
+    private var steps: [String] = []
+    private let stepsTableView = UITableView()
     
-    init(route: AMapRoute, startPoint: CLLocationCoordinate2D, endPoint: CLLocationCoordinate2D) {
+    init(route: AMapRoute, steps: [String], startPoint: CLLocationCoordinate2D, endPoint: CLLocationCoordinate2D) {
         // 初始化地图视图
         let mapView = MAMapView(frame: .zero)
         mapView.showsUserLocation = true
@@ -20,6 +22,7 @@ class MapViewController: UIViewController {
         self.route = route
         self.startPoint = startPoint
         self.endPoint = endPoint
+        self.steps = steps
         
         super.init(nibName: nil, bundle: nil)
         
@@ -46,6 +49,21 @@ class MapViewController: UIViewController {
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+        
+        // 步骤视图
+        stepsTableView.dataSource = self
+        stepsTableView.register(UITableViewCell.self, forCellReuseIdentifier: "StepCell")
+        view.addSubview(stepsTableView)
+        stepsTableView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stepsTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            stepsTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            stepsTableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            stepsTableView.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1.0/3.0)
+        ])
+        
+        // 让地图不被步骤遮挡
+        mapView.bringSubviewToFront(stepsTableView)
     }
     
     private func setupMap() {
@@ -149,5 +167,16 @@ extension MapViewController: MAMapViewDelegate {
             return renderer
         }
         return nil
+    }
+}
+
+extension MapViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return steps.count
+    }
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "StepCell", for: indexPath)
+        cell.textLabel?.text = steps[indexPath.row]
+        return cell
     }
 } 

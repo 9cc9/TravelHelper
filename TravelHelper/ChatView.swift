@@ -65,6 +65,7 @@ class ChatView: UIView {
     private var currentRoute: AMapRoute?
     private var currentStartPoint: CLLocationCoordinate2D?
     private var currentEndPoint: CLLocationCoordinate2D?
+    private var currentSteps: [String]?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -215,6 +216,7 @@ class ChatView: UIView {
                         self?.currentRoute = data.route
                         self?.currentStartPoint = data.startPoint
                         self?.currentEndPoint = data.endPoint
+                        self?.currentSteps = data.steps
                         
                     case .failure(let error):
                         self?.messages.append((text: "路线规划失败：\(error.localizedDescription)", isUser: false))
@@ -256,9 +258,10 @@ extension ChatView: UITableViewDelegate, UITableViewDataSource {
         let message = messages[indexPath.row]
         if message.text == "查看地图" {
             if let route = currentRoute,
+               let steps = currentSteps,
                let startPoint = currentStartPoint,
                let endPoint = currentEndPoint {
-                let mapVC = MapViewController(route: route, startPoint: startPoint, endPoint: endPoint)
+                let mapVC = MapViewController(route: route, steps: steps, startPoint: startPoint, endPoint: endPoint)
                 if let viewController = self.window?.rootViewController {
                     viewController.present(mapVC, animated: true)
                 }
