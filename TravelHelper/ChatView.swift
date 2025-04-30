@@ -1,6 +1,7 @@
 import UIKit
 import AMapFoundationKit
 import AMapSearchKit
+import MAMapKit
 
 class ChatView: UIView {
     // 消息数组
@@ -276,4 +277,14 @@ extension ChatView: UITextFieldDelegate {
         sendButtonTapped()
         return true
     }
+}
+
+func MAMapRectForCoordinateRegion(topLeft: CLLocationCoordinate2D, bottomRight: CLLocationCoordinate2D) -> MAMapRect {
+    let topLeftMapPoint = MAMapPointForCoordinate(topLeft)
+    let bottomRightMapPoint = MAMapPointForCoordinate(bottomRight)
+    let origin = MAMapPoint(x: min(topLeftMapPoint.x, bottomRightMapPoint.x),
+                            y: min(topLeftMapPoint.y, bottomRightMapPoint.y))
+    let size = MAMapSize(width: abs(topLeftMapPoint.x - bottomRightMapPoint.x),
+                         height: abs(topLeftMapPoint.y - bottomRightMapPoint.y))
+    return MAMapRect(origin: origin, size: size)
 } 
